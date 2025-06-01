@@ -50,8 +50,6 @@ Tunstun now supports managing multiple YAML configuration files:
 - **Merge**: Combine tunnels from multiple files
 - **New**: Create a new empty configuration
 
-**✨ Built-in File Browser:** No system dependencies required - works without zenity, kdialog, or other external tools.
-
 ### Quick Access
 
 Use the **folder icon** in the toolbar for quick access to:
@@ -70,9 +68,6 @@ The Configuration Manager provides:
 - Create new configurations
 - Browse for files anywhere on your system
 - Built-in Flutter file browser with no external dependencies
-
-## TODO
-- Save and load tunnels
 
 
 ## Usage
@@ -118,7 +113,6 @@ This creates two optimized AppImage versions:
 - **Release Version**: `tunstun-release-YYYYMMDD-HHMM-x86_64.AppImage` (~19MB, production-ready)
 - **JIT Version**: `tunstun-jit-YYYYMMDD-HHMM-x86_64.AppImage` (~47MB, debug build)
 
-Both versions include minimal system tray library bundling for maximum compatibility.
 
 ### From Source
 ```bash
