@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 80 81.232117"
+   xml:space="preserve"
+   id="svg5"
+   sodipodi:docname="icon.svg"
+   width="80"
+   height="81.232117"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   inkscape:export-filename="icons/tray_icon.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs5">
+	
+	
+	
+	
+	
+</defs><sodipodi:namedview
+   id="namedview5"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   showgrid="false"
+   inkscape:zoom="5.2396612"
+   inkscape:cx="57.446462"
+   inkscape:cy="31.967715"
+   inkscape:window-width="1920"
+   inkscape:window-height="1026"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="g2" />
+<style
+   type="text/css"
+   id="style1">
+	.st0{fill:#4CAF50;}
+	.st1{font-family:'ArialMT', sans-serif;}
+	.st2{font-size:24px;}
+</style>
+
+
+<g
+   id="g2"><rect
+     style="fill:#303f9f;fill-opacity:1;stroke-width:1.09407"
+     id="rect1"
+     width="73.808998"
+     height="73.808998"
+     x="3.3017294"
+     y="4.1808119"
+     ry="10.791178"
+     inkscape:export-filename="icons/icon.png"
+     inkscape:export-xdpi="665.93506"
+     inkscape:export-ydpi="665.93506" /><g
+     id="g1"
+     transform="translate(0.26990554,-0.53981106)"><polygon
+       class="st0"
+       points="50,70 10,40 50,10 90,40 "
+       id="polygon1"
+       style="fill:none;fill-opacity:1;stroke:#fdfdfd;stroke-opacity:1"
+       transform="matrix(0.82115778,0,0,0.82453234,-1.3912224,10.422141)" /><polygon
+       fill="#a5d6a7"
+       points="50,70 30,55 50,30 70,55 "
+       id="polygon4"
+       style="fill:none;fill-opacity:1;stroke:#fdfdfd;stroke-opacity:1"
+       transform="matrix(0.82168446,0,0,0.79305098,-1.3221304,11.966083)" /><polygon
+       fill="#c8e6c9"
+       points="30,40 50,30 70,55 50,10 "
+       id="polygon5"
+       style="fill:none;fill-opacity:1;stroke:#fdfdfd;stroke-opacity:1"
+       transform="matrix(0.82358935,0,0,0.81706194,-1.5593083,10.775768)" /></g></g></svg>

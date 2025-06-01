@@ -1,0 +1,17 @@
+tunnels:
+  - id: "example-1"
+    name: "Development Server"
+    remoteHost: "192.168.90.91"
+    remotePort: 80
+    sshUser: "user"
+    sshHost: "ssh-server"
+    localPort: 8080
+    isConnected: false
+  - id: "example-2"
+    name: "Database Connection"
+    remoteHost: "localhost"
+    remotePort: 5432
+    sshUser: "admin"
+    sshHost: "database-server"
+    localPort: 5433
+    isConnected: false

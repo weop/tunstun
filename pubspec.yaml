@@ -1,0 +1,27 @@
+name: tunstun
+description: "A user-friendly developer tool for managing SSH tunnels"
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  yaml: ^3.1.2
+  path_provider: ^2.1.4
+  process: ^5.0.2
+  window_manager: ^0.3.7
+  system_tray: ^2.0.3
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
