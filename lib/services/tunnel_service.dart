@@ -482,7 +482,7 @@ class TunnelService extends ChangeNotifier {
 
   Future<bool> _isPortInUse(int port) async {
     try {
-      final socket = await ServerSocket.bind('localhost', port);
+      final socket = await ServerSocket.bind('127.0.0.1', port);
       await socket.close();
       return false;
     } catch (e) {

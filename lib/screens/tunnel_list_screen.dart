@@ -596,8 +596,8 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                                   ? Icons.stop_circle
                                   : Icons.play_circle,
                               color: tunnel.isConnected
-                                  ? Colors.red
-                                  : Colors.green,
+                                  ? Colors.black87
+                                  : Colors.black54,
                             ),
                             tooltip: tunnel.isConnected
                                 ? 'Disconnect'
@@ -1142,7 +1142,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
     try {
       // Create the URL for the local tunnel endpoint
       final localUrl =
-          'http://localhost:${_extractPortFromEndpoint(remoteEndpoint)}';
+          'http://127.0.0.1:${_extractPortFromEndpoint(remoteEndpoint)}';
       final uri = Uri.parse(localUrl);
 
       if (await canLaunchUrl(uri)) {
@@ -1186,7 +1186,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
     if (!mounted) return;
 
     try {
-      final localUrl = 'http://localhost:$localPort';
+      final localUrl = 'http://127.0.0.1:$localPort';
       final uri = Uri.parse(localUrl);
 
       if (await canLaunchUrl(uri)) {
