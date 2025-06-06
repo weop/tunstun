@@ -37,8 +37,6 @@ class _AddTunnelScreenState extends State<AddTunnelScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Tunnel'),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.indigo.shade500,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

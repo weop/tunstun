@@ -60,8 +60,6 @@ class _EditTunnelScreenState extends State<EditTunnelScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Tunnel'),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.indigo.shade500,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

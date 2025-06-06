@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/tunnel_config.dart';
 import '../services/tunnel_service.dart';
 import '../services/system_tray_service.dart';
 import '../services/traffic_monitor_service.dart';
+import '../services/theme_service.dart';
 import '../widgets/flutter_file_picker.dart';
 import 'add_tunnel_screen.dart';
 import 'edit_tunnel_screen.dart';
@@ -249,21 +251,47 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                       .infinity, // Expand to fill the horizontal space allocated by AppBar for the title
                   alignment: Alignment
                       .centerLeft, // Center the Text widget within this Container
-                  child: const Text(
+                  child: Text(
                     'tunstun',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontStyle: FontStyle.italic,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
               ),
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white.withAlpha(150),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
               centerTitle: true,
               automaticallyImplyLeading: false, // Remove back button
               actions: [
+                // Dark mode toggle button
+                Consumer<ThemeService>(
+                  builder: (context, themeService, child) {
+                    IconData iconData;
+                    String tooltip;
+
+                    if (themeService.themeMode == ThemeMode.light) {
+                      iconData = Icons.dark_mode_outlined;
+                      tooltip = 'Switch to Dark Mode';
+                    } else if (themeService.themeMode == ThemeMode.dark) {
+                      iconData = Icons.light_mode_outlined;
+                      tooltip = 'Switch to System Mode';
+                    } else {
+                      iconData = Icons.brightness_auto_outlined;
+                      tooltip = 'Switch to Light Mode';
+                    }
+
+                    return IconButton(
+                      icon: Icon(iconData),
+                      onPressed: () {
+                        themeService.toggleTheme();
+                      },
+                      tooltip: tooltip,
+                    );
+                  },
+                ),
                 // Configuration management menu
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.folder),
@@ -340,58 +368,61 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                      bottom: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _addTunnel,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Tunnel'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade500,
-                          foregroundColor: Colors.white,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _addTunnel,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Tunnel'),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _connectAllTunnels,
-                        icon: const Icon(Icons.play_circle_fill),
-                        label: const Text('Connect All'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: _connectAllTunnels,
+                          icon: const Icon(Icons.play_circle_fill),
+                          label: const Text('Connect All'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _disconnectAllTunnels,
-                        icon: const Icon(Icons.stop_circle),
-                        label: const Text('Disconnect All'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: _disconnectAllTunnels,
+                          icon: const Icon(Icons.stop_circle),
+                          label: const Text('Disconnect All'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.shade600,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton.filled(
-                        onPressed: _loadTunnels,
-                        icon: const Icon(Icons.refresh),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.green.shade700,
+                        const SizedBox(width: 24),
+                        IconButton(
+                          onPressed: _loadTunnels,
+                          icon: const Icon(Icons.refresh),
+                          tooltip: 'Refresh (F5)',
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${widget.tunnelService.tunnels.length} tunnel${widget.tunnelService.tunnels.length == 1 ? '' : 's'}',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
+                        const SizedBox(width: 8),
+                        Text(
+                          '${widget.tunnelService.tunnels.length} tunnel${widget.tunnelService.tunnels.length == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 // Main content area
@@ -413,18 +444,24 @@ class _TunnelListScreenState extends State<TunnelListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.router_outlined, size: 64, color: Colors.grey.shade400),
+          Icon(
+            Icons.router_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(height: 16),
           Text(
             'No SSH Tunnels',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade600),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Add your first tunnel to get started',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -453,9 +490,12 @@ class _TunnelListScreenState extends State<TunnelListScreen>
 
   Widget _buildTunnelCard(TunnelConfig tunnel) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      color: Theme.of(context).brightness == Brightness.light
+          ? Theme.of(context).colorScheme.surfaceContainerLow
+          : Theme.of(context).colorScheme.surfaceContainerLow,
+      margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -472,12 +512,13 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
+                          const SizedBox(width: 8),
                           IconButton(
                             onPressed: () => _toggleTunnel(tunnel),
                             icon: Icon(
                               tunnel.isConnected
-                                  ? Icons.stop_circle
-                                  : Icons.play_circle,
+                                  ? Icons.stop_rounded
+                                  : Icons.play_arrow_rounded,
                               color: tunnel.isConnected
                                   ? Colors.red
                                   : Colors.green,
@@ -486,16 +527,15 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                                 ? 'Disconnect'
                                 : 'Connect',
                           ),
-                          IconButton(
-                            onPressed: () =>
-                                _openLocalEndpoint(tunnel.localPort),
-                            icon: Icon(
-                              Icons.link,
-                              color: tunnel.isConnected
-                                  ? Colors.green
-                                  : Colors.transparent,
+                          if (tunnel.isConnected) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () =>
+                                  _openLocalEndpoint(tunnel.localPort),
+                              icon: const Icon(Icons.link, color: Colors.green),
+                              tooltip: 'Open in Browser',
                             ),
-                          ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -593,11 +633,9 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                             onPressed: () => _toggleTunnel(tunnel),
                             icon: Icon(
                               tunnel.isConnected
-                                  ? Icons.stop_circle
-                                  : Icons.play_circle,
-                              color: tunnel.isConnected
-                                  ? Colors.black87
-                                  : Colors.black54,
+                                  ? Icons.stop_circle_rounded
+                                  : Icons.play_circle_rounded,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             tooltip: tunnel.isConnected
                                 ? 'Disconnect'
@@ -605,12 +643,18 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           ),
                         IconButton(
                           onPressed: () => _editTunnel(tunnel),
-                          icon: const Icon(Icons.edit, color: Colors.black87),
+                          icon: Icon(
+                            Icons.edit,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                           tooltip: 'Edit',
                         ),
                         IconButton(
                           onPressed: () => _deleteTunnel(tunnel),
-                          icon: const Icon(Icons.delete, color: Colors.black87),
+                          icon: Icon(
+                            Icons.delete,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                           tooltip: 'Delete',
                         ),
                       ],
@@ -794,12 +838,26 @@ class _TunnelListScreenState extends State<TunnelListScreen>
     return Center(
       child: Row(
         children: [
-          Expanded(child: Container(height: 1, color: Colors.grey.shade600)),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(Icons.link_off, size: 16, color: Colors.grey.shade400),
+            child: Icon(
+              Icons.link_off,
+              size: 16,
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
-          Expanded(child: Container(height: 1, color: Colors.grey.shade600)),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
         ],
       ),
     );
@@ -808,14 +866,14 @@ class _TunnelListScreenState extends State<TunnelListScreen>
   // Get the appropriate color for tunnel status
   Color _getTunnelStatusColor(TunnelConfig tunnel) {
     if (widget.tunnelService.isConnecting(tunnel.id)) {
-      return Colors.orange;
+      return Colors.orange.shade600;
     } else if (widget.tunnelService.hasActiveProcess(tunnel.id)) {
-      return Colors.green;
+      return Colors.green.shade600;
     } else if (tunnel.isConnected) {
       // Marked as connected but no active process - show warning color
       return Colors.red.shade600;
     } else {
-      return Colors.grey;
+      return Theme.of(context).colorScheme.outline;
     }
   }
 

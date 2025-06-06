@@ -60,8 +60,6 @@ class _ConfigManagerScreenState extends State<ConfigManagerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuration Manager'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

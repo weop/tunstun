@@ -4,8 +4,10 @@ import 'dart:ui';
 import 'dart:async';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
+import 'package:provider/provider.dart';
 import 'services/tunnel_service.dart';
 import 'services/system_tray_service.dart';
+import 'services/theme_service.dart';
 import 'screens/tunnel_list_screen.dart';
 
 void main() async {
@@ -69,7 +71,12 @@ void main() async {
     await _initializeSystemTrayDelayed();
   });
 
-  runApp(const TunstunApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeService(),
+      child: const TunstunApp(),
+    ),
+  );
 }
 
 // Delayed system tray initialization to prevent segfaults on problematic systems
@@ -192,14 +199,37 @@ class _TunstunAppState extends State<TunstunApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Tunstun',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700),
-        useMaterial3: true,
-      ),
-      home: TunnelListScreen(tunnelService: tunnelService),
-      debugShowCheckedModeBanner: false,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return MaterialApp(
+          title: 'Tunstun',
+          themeMode: themeService.themeMode,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.indigo.shade700,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+            appBarTheme: const AppBarTheme(
+              centerTitle: true,
+              elevation: 0,
+            ),
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.indigo.shade700,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+            appBarTheme: const AppBarTheme(
+              centerTitle: true,
+              elevation: 0,
+            ),
+          ),
+          home: TunnelListScreen(tunnelService: tunnelService),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
