@@ -178,26 +178,28 @@ class _FilePickerScreenState extends State<FilePickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(widget.title)),
       body: Column(
         children: [
           // Current path bar
           Container(
             padding: const EdgeInsets.all(8.0),
-            color: Colors.grey.shade100,
+            color: colorScheme.surfaceVariant,
             child: Row(
               children: [
-                Icon(Icons.folder, color: Colors.blue),
+                Icon(Icons.folder, color: colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _currentDirectory?.path ?? 'Loading...',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -290,12 +292,15 @@ class _FilePickerScreenState extends State<FilePickerScreen> {
                       // Parent directory entry
                       if (_currentDirectory?.parent != null && index == 0) {
                         return ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.arrow_upward,
-                            color: Colors.orange,
+                            color: colorScheme.secondary,
                           ),
-                          title: const Text('..'),
-                          subtitle: const Text('Parent directory'),
+                          title: Text('..', style: theme.textTheme.bodyLarge),
+                          subtitle: Text(
+                            'Parent directory',
+                            style: theme.textTheme.bodySmall,
+                          ),
                           onTap: () =>
                               _navigateToDirectory(_currentDirectory!.parent!),
                         );
@@ -315,25 +320,31 @@ class _FilePickerScreenState extends State<FilePickerScreen> {
                         leading: Icon(
                           isDirectory ? Icons.folder : Icons.description,
                           color: isDirectory
-                              ? Colors.blue
+                              ? colorScheme.primary
                               : isAllowed
-                              ? Colors.green
-                              : Colors.grey,
+                              ? colorScheme.secondary
+                              : colorScheme.outline,
                         ),
                         title: Text(
                           fileName,
-                          style: TextStyle(
-                            color: isAllowed ? Colors.black : Colors.grey,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: isAllowed
+                                ? colorScheme.onSurface
+                                : colorScheme.outline,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
                         ),
-                        subtitle: isDirectory
-                            ? const Text('Directory')
-                            : Text(_getFileSize(entity as File)),
+                        subtitle: Text(
+                          isDirectory
+                              ? 'Directory'
+                              : _getFileSize(entity as File),
+                          style: theme.textTheme.bodySmall,
+                        ),
                         selected: isSelected,
-                        selectedTileColor: Colors.blue.withOpacity(0.1),
+                        selectedTileColor: colorScheme.primaryContainer
+                            .withOpacity(0.3),
                         onTap: isDirectory
                             ? () => _navigateToDirectory(entity as Directory)
                             : isAllowed
@@ -349,18 +360,24 @@ class _FilePickerScreenState extends State<FilePickerScreen> {
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                color: colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+                ),
               ),
               child: Row(
                 children: [
-                  const Text('File name: '),
+                  Text('File name: ', style: theme.textTheme.bodyMedium),
                   Expanded(
                     child: TextField(
                       controller: _fileNameController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+                      style: theme.textTheme.bodyMedium,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
                         isDense: true,
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: colorScheme.primary),
+                        ),
                       ),
                       onSubmitted: (_) => _confirmSelection(),
                     ),
@@ -386,10 +403,6 @@ class _FilePickerScreenState extends State<FilePickerScreen> {
                       : (_fileNameController.text.trim().isNotEmpty
                             ? _confirmSelection
                             : null),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
                   child: Text(
                     widget.mode == FilePickerMode.open ? 'Open' : 'Save',
                   ),

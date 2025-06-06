@@ -1517,6 +1517,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
               shortcut,
               style: const TextStyle(
                 fontFamily: 'monospace',
+                color: Colors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
