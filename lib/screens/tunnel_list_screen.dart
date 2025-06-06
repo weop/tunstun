@@ -382,8 +382,12 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                       children: [
                         ElevatedButton.icon(
                           onPressed: _addTunnel,
-                          icon: const Icon(Icons.add),
+                          icon: const Icon(Icons.add_circle),
                           label: const Text('Add Tunnel'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo.shade600,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
