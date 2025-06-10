@@ -1,16 +1,15 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:system_tray/system_tray.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-class SystemTrayService {
+class SystemTrayService with TrayListener {
   static final SystemTrayService _instance = SystemTrayService._internal();
   factory SystemTrayService() => _instance;
   SystemTrayService._internal();
 
-  final SystemTray _systemTray = SystemTray();
   bool _isInitialized = false;
-  bool _isDisabled = false; // Track if system tray should be disabled
+  bool _isDisabled = false;
 
   bool get isAvailable => _isInitialized && !_isDisabled;
 
@@ -18,154 +17,88 @@ class SystemTrayService {
     if (_isInitialized || _isDisabled) return;
 
     try {
-      debugPrint('Initializing system tray...');
+      debugPrint('Initializing system tray with tray_manager...');
 
-      // Add progressive delays to ensure system stability
+      // Add tray listener
+      trayManager.addListener(this);
+
+      // Progressive delays for system stability
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Check for system tray support before attempting initialization
+      // Check system tray support
       if (!await _checkSystemTraySupport()) {
         debugPrint('System tray support not available - marking as disabled');
         _isDisabled = true;
         return;
       }
 
-      debugPrint(
-        'System tray support confirmed, proceeding with initialization...',
-      );
+      debugPrint('System tray support confirmed, proceeding with initialization...');
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Initialize system tray with minimal configuration first
-      debugPrint('Calling _systemTray.initSystemTray...');
-      await _systemTray.initSystemTray(
-        title: "Tunstun",
-        iconPath: _getIconPath(),
-        toolTip: "Tunstun SSH Tunnel Manager",
-        isTemplate: false, // Better for Wayland systems
-      );
-      debugPrint('System tray base initialization completed');
-
-      // Add another delay before setting up menu
-      await Future.delayed(const Duration(milliseconds: 200));
+      // Set tray icon - tray_manager is much more robust
+      await trayManager.setIcon(_getIconPath());
+      debugPrint('Tray icon set successfully');
 
       // Set up context menu
-      debugPrint('Setting up context menu...');
-      final Menu menu = Menu();
-
-      await menu.buildFrom([
-        MenuItemLabel(
-          label: 'Show Tunstun',
-          onClicked: (menuItem) => _showWindow(),
-        ),
-        MenuSeparator(),
-        MenuItemLabel(label: 'Quit', onClicked: (menuItem) => _quitApp()),
-      ]);
-
-      await _systemTray.setContextMenu(menu);
-      debugPrint('Context menu set successfully');
-
-      // Add delay before event handler registration
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Handle system tray click
-      debugPrint('Registering event handler...');
-      _systemTray.registerSystemTrayEventHandler((eventName) {
-        debugPrint('System tray event: $eventName');
-        if (eventName == kSystemTrayEventClick) {
-          _showWindow();
-        }
-      });
+      await _setupContextMenu();
+      debugPrint('Context menu configured successfully');
 
       _isInitialized = true;
-      debugPrint(
-        'System tray initialized successfully with icon: ${_getIconPath()}',
-      );
+      debugPrint('System tray initialized successfully with tray_manager');
     } catch (e, stackTrace) {
       debugPrint('Failed to initialize system tray: $e');
       debugPrint('Stack trace: $stackTrace');
-
-      // Try fallback icon if primary fails
-      try {
-        debugPrint('Attempting fallback initialization...');
-        await _systemTray.initSystemTray(
-          title: "Tunstun",
-          iconPath: _getFallbackIconPath(),
-          toolTip: "Tunstun SSH Tunnel Manager",
-          isTemplate: false,
-        );
-
-        // Set up context menu for fallback
-        final Menu menu = Menu();
-        await menu.buildFrom([
-          MenuItemLabel(
-            label: 'Show Tunstun',
-            onClicked: (menuItem) => _showWindow(),
-          ),
-          MenuSeparator(),
-          MenuItemLabel(label: 'Quit', onClicked: (menuItem) => _quitApp()),
-        ]);
-        await _systemTray.setContextMenu(menu);
-
-        _systemTray.registerSystemTrayEventHandler((eventName) {
-          if (eventName == kSystemTrayEventClick) {
-            _showWindow();
-          }
-        });
-
-        _isInitialized = true;
-        debugPrint(
-          'System tray initialized with fallback icon: ${_getFallbackIconPath()}',
-        );
-      } catch (fallbackError, fallbackStackTrace) {
-        debugPrint(
-          'Failed to initialize system tray with fallback: $fallbackError',
-        );
-        debugPrint('Fallback stack trace: $fallbackStackTrace');
-        _isDisabled = true; // Disable system tray functionality
-        debugPrint('System tray disabled due to initialization failures');
-      }
+      _isDisabled = true;
+      debugPrint('System tray disabled due to initialization failures');
     }
   }
 
-  // Check if system tray support is available before attempting initialization
+  Future<void> _setupContextMenu() async {
+    final menu = Menu(
+      items: [
+        MenuItem(
+          key: 'show_window',
+          label: 'Show Tunstun',
+        ),
+        MenuItem.separator(),
+        MenuItem(
+          key: 'quit_app',
+          label: 'Quit',
+        ),
+      ],
+    );
+
+    await trayManager.setContextMenu(menu);
+  }
+
+  // Check if system tray support is available
   Future<bool> _checkSystemTraySupport() async {
     try {
-      // Check for required environment variables and processes on Linux
       final env = Platform.environment;
 
-      // For X11 systems, check for notification area support
-      if (env['DISPLAY'] != null) {
-        debugPrint('X11 display detected: ${env['DISPLAY']}');
-        return true; // Assume X11 has tray support
+      // Check for display server
+      if (env['DISPLAY'] != null || env['WAYLAND_DISPLAY'] != null) {
+        debugPrint('Display server detected - system tray should work');
+        return true;
       }
 
-      // For Wayland, check if status notifier is available
-      if (env['WAYLAND_DISPLAY'] != null) {
-        debugPrint('Wayland session detected: ${env['WAYLAND_DISPLAY']}');
-
-        // Check if DBus is available (required for StatusNotifierItem)
-        try {
-          final result = await Process.run('which', [
-            'dbus-daemon',
-          ], runInShell: true);
-          if (result.exitCode != 0) {
-            debugPrint('DBus not available - system tray likely unsupported');
-            return false;
-          }
-          debugPrint('DBus available - system tray should work');
-          return true;
-        } catch (e) {
-          debugPrint('Error checking DBus availability: $e');
-          return false;
-        }
+      // For macOS, always assume tray support
+      if (Platform.isMacOS) {
+        debugPrint('macOS detected - system tray supported');
+        return true;
       }
 
-      // No display server detected
+      // For Windows, always assume tray support
+      if (Platform.isWindows) {
+        debugPrint('Windows detected - system tray supported');
+        return true;
+      }
+
       debugPrint('No display server detected - disabling system tray');
       return false;
     } catch (e) {
       debugPrint('Error checking system tray support: $e');
-      return false; // Conservative approach - disable if check fails
+      return false;
     }
   }
 
@@ -178,7 +111,7 @@ class SystemTrayService {
   Future<void> updateTooltip(String tooltip) async {
     if (!isAvailable) return;
     try {
-      await _systemTray.setToolTip(tooltip);
+      await trayManager.setToolTip(tooltip);
     } catch (e) {
       debugPrint('Failed to update system tray tooltip: $e');
     }
@@ -204,9 +137,7 @@ class SystemTrayService {
 
   Future<void> hideToTray() async {
     if (!isAvailable) {
-      debugPrint(
-        'System tray not available, hiding window without tray functionality',
-      );
+      debugPrint('System tray not available, hiding window without tray functionality');
       try {
         await windowManager.hide();
         await windowManager.setSkipTaskbar(true);
@@ -225,26 +156,66 @@ class SystemTrayService {
   }
 
   String _getIconPath() {
-    // Linux (including Sway/Wayland) - use smaller icon optimized for system tray
-    return 'assets/icons/tray_icon_22.png';
-  }
-
-  String _getFallbackIconPath() {
-    // Linux fallback sequence: 16px -> 24px -> original
-    return 'assets/icons/tray_icon_16.png';
+    if (Platform.isWindows) {
+      return 'assets/icons/icon.png'; // Windows can use PNG with tray_manager
+    } else if (Platform.isMacOS) {
+      return 'assets/icons/icon.png'; // macOS
+    } else {
+      // Linux - try different sizes for better compatibility
+      return 'assets/icons/icon.png';
+    }
   }
 
   Future<void> dispose() async {
     if (!_isInitialized || _isDisabled) return;
     try {
-      // Destroy the system tray (this should automatically clean up event handlers)
-      await _systemTray.destroy();
+      trayManager.removeListener(this);
+      await trayManager.destroy();
       _isInitialized = false;
       debugPrint('System tray disposed successfully');
     } catch (e) {
       debugPrint('Failed to dispose system tray: $e');
-      // Force reset state even if dispose fails
       _isInitialized = false;
+    }
+  }
+
+  // TrayListener implementations
+  @override
+  void onTrayIconMouseDown() {
+    debugPrint('Tray icon clicked');
+    if (Platform.isWindows) {
+      _showWindow();
+    } else {
+      // On macOS and Linux, show context menu on left click
+      trayManager.popUpContextMenu();
+    }
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    debugPrint('Tray icon right-clicked');
+    if (Platform.isWindows) {
+      trayManager.popUpContextMenu();
+    } else {
+      _showWindow();
+    }
+  }
+
+  @override
+  void onTrayIconRightMouseUp() {
+    // Optional: handle right mouse up if needed
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    debugPrint('Tray menu item clicked: ${menuItem.key}');
+    switch (menuItem.key) {
+      case 'show_window':
+        _showWindow();
+        break;
+      case 'quit_app':
+        _quitApp();
+        break;
     }
   }
 }
