@@ -66,9 +66,8 @@ void main() async {
     await windowManager.focus();
     await windowManager.setPreventClose(true); // Prevent default close behavior
 
-    // Initialize system tray AFTER window is ready and shown
-    // This prevents race conditions on some Linux distributions
-    await _initializeSystemTrayDelayed();
+    // Initialize system tray - tray_manager is much more robust
+    await _initializeSystemTray();
   });
 
   runApp(
@@ -79,89 +78,25 @@ void main() async {
   );
 }
 
-// Delayed system tray initialization to prevent segfaults on problematic systems
-Future<void> _initializeSystemTrayDelayed() async {
+// Simple system tray initialization using robust tray_manager
+Future<void> _initializeSystemTray() async {
   try {
-    // Check if we should even attempt system tray initialization
-    if (!_shouldAttemptSystemTray()) {
-      debugPrint(
-        'System tray initialization skipped due to environment checks',
-      );
-      SystemTrayService().markAsDisabled();
-      return;
-    }
+    // Small delay to ensure window is fully initialized
+    debugPrint('Initializing system tray...');
+    await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Wait longer for the window manager to fully settle and all dependencies to load
-    debugPrint('Waiting for system to stabilize before tray init...');
-    await Future.delayed(const Duration(milliseconds: 2500)); // Increased delay
+    await SystemTrayService().initSystemTray();
 
-    debugPrint('Attempting system tray initialization...');
-
-    // Run system tray initialization in an isolated zone to prevent crashes
-    await runZonedGuarded(
-      () async {
-        await SystemTrayService().initSystemTray();
-      },
-      (error, stackTrace) {
-        debugPrint('System tray initialization failed with zone error: $error');
-        debugPrint('Zone stack trace: $stackTrace');
-        SystemTrayService().markAsDisabled();
-      },
-    );
-
-    // Check if initialization was successful
     if (SystemTrayService().isAvailable) {
       debugPrint('System tray initialization completed successfully');
     } else {
-      debugPrint(
-        'System tray initialization failed - continuing without tray functionality',
-      );
+      debugPrint('System tray initialization failed - continuing without tray functionality');
     }
   } catch (e, stackTrace) {
     debugPrint('System tray initialization failed (this is non-fatal): $e');
     debugPrint('Initialization stack trace: $stackTrace');
     // Mark system tray as disabled so the app can continue without it
     SystemTrayService().markAsDisabled();
-  }
-}
-
-// Check if we should attempt system tray initialization based on environment
-bool _shouldAttemptSystemTray() {
-  try {
-    // Check for known problematic environments
-    final env = Platform.environment;
-
-    // Check if we're in a container or problematic environment
-    if (env['container'] != null) {
-      debugPrint('Running in container - disabling system tray');
-      return false;
-    }
-
-    // Check for Arch Linux with potential missing dependencies
-    if (Platform.isLinux) {
-      final distro = env['DISTRIB_ID'] ?? env['ID'] ?? '';
-      if (distro.toLowerCase().contains('arch')) {
-        debugPrint('Detected Arch Linux - system tray may be unstable');
-        // Still attempt but with extra caution
-      }
-
-      // Check if running under Wayland without proper indicator support
-      final waylandDisplay = env['WAYLAND_DISPLAY'];
-      final xdgSessionType = env['XDG_SESSION_TYPE'];
-      if (waylandDisplay != null ||
-          (xdgSessionType != null &&
-              xdgSessionType.toLowerCase() == 'wayland')) {
-        debugPrint(
-          'Detected Wayland session - system tray support may be limited',
-        );
-        // Still attempt but log warning
-      }
-    }
-
-    return true;
-  } catch (e) {
-    debugPrint('Error checking environment for system tray: $e');
-    return true; // Default to attempting if check fails
   }
 }
 
