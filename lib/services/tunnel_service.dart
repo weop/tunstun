@@ -71,13 +71,27 @@ class TunnelService extends ChangeNotifier {
 
         if (yamlData is Map && yamlData['tunnels'] is List) {
           _tunnels.clear();
+          bool needsMigration = false;
+
           for (final tunnelData in yamlData['tunnels']) {
             if (tunnelData is Map) {
-              final tunnel = TunnelConfig.fromJson(
-                Map<String, dynamic>.from(tunnelData),
-              );
+              final data = Map<String, dynamic>.from(tunnelData);
+
+              // Migrate old configs without localHost field
+              if (!data.containsKey('localHost')) {
+                data['localHost'] = '127.0.0.1';
+                needsMigration = true;
+              }
+
+              final tunnel = TunnelConfig.fromJson(data);
               _tunnels.add(tunnel);
             }
+          }
+
+          // Save migrated configs
+          if (needsMigration) {
+            await saveTunnels();
+            debugPrint('Migrated tunnels to include localHost field');
           }
 
           // Validate connection states - check if SSH processes are actually running
@@ -201,7 +215,7 @@ class TunnelService extends ChangeNotifier {
         // Use socat for direct port forwarding to the actual remote host
         final forwardCommand = [
           'socat',
-          'TCP-LISTEN:${tunnel.localPort},fork,reuseaddr',
+          'TCP-LISTEN:${tunnel.localPort},bind=${tunnel.localHost},fork,reuseaddr',
           'TCP:${tunnel.remoteHost}:${tunnel.remotePort}',
         ];
 
@@ -239,7 +253,8 @@ class TunnelService extends ChangeNotifier {
           '-o', 'ConnectTimeout=10', // 10 second timeout
           '-o',
           'StrictHostKeyChecking=no', // Don't prompt for host key verification
-          '-L', '${tunnel.localPort}:${tunnel.remoteHost}:${tunnel.remotePort}',
+          '-L',
+          '${tunnel.localHost}:${tunnel.localPort}:${tunnel.remoteHost}:${tunnel.remotePort}',
           tunnel.connectionString,
         ];
 
@@ -621,6 +636,7 @@ class TunnelService extends ChangeNotifier {
       buffer.writeln('    sshUser: "${tunnel['sshUser']}"');
       buffer.writeln('    sshHost: "${tunnel['sshHost']}"');
       buffer.writeln('    localPort: ${tunnel['localPort']}');
+      buffer.writeln('    localHost: "${tunnel['localHost']}"');
       buffer.writeln('    isConnected: ${tunnel['isConnected']}');
     }
 
@@ -708,14 +724,21 @@ class TunnelService extends ChangeNotifier {
       if (yamlData is Map && yamlData.containsKey('tunnels')) {
         final tunnelsData = yamlData['tunnels'];
         final loadedTunnels = <TunnelConfig>[];
+        bool needsMigration = false;
 
         // Handle the case where tunnels is a list (including empty list)
         if (tunnelsData is List) {
           for (final tunnelData in tunnelsData) {
             if (tunnelData is Map) {
-              final tunnel = TunnelConfig.fromJson(
-                Map<String, dynamic>.from(tunnelData),
-              );
+              final data = Map<String, dynamic>.from(tunnelData);
+
+              // Migrate old configs without localHost field
+              if (!data.containsKey('localHost')) {
+                data['localHost'] = '127.0.0.1';
+                needsMigration = true;
+              }
+
+              final tunnel = TunnelConfig.fromJson(data);
               loadedTunnels.add(tunnel);
             }
           }
@@ -741,6 +764,12 @@ class TunnelService extends ChangeNotifier {
         // Add loaded tunnels (may be empty)
         _tunnels.addAll(loadedTunnels);
         _currentConfigurationFile = filePath;
+
+        // Save migrated file
+        if (needsMigration) {
+          await saveToFile(filePath);
+          debugPrint('Migrated imported file to include localHost field');
+        }
 
         // Validate connection states
         await _validateTunnelStates();

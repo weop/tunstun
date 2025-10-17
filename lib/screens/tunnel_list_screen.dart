@@ -387,6 +387,9 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo.shade600,
                             foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -397,6 +400,9 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green.shade600,
                             foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -407,6 +413,9 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange.shade600,
                             foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 24),
@@ -455,7 +464,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'No SSH Tunnels',
+            'No Tunnels Configured',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -472,6 +481,11 @@ class _TunnelListScreenState extends State<TunnelListScreen>
             onPressed: _addTunnel,
             icon: const Icon(Icons.add),
             label: const Text('Add Tunnel'),
+            style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ],
       ),
@@ -534,8 +548,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           if (tunnel.isConnected) ...[
                             const SizedBox(width: 8),
                             IconButton(
-                              onPressed: () =>
-                                  _openLocalEndpoint(tunnel.localPort),
+                              onPressed: () => _openLocalEndpoint(tunnel),
                               icon: const Icon(Icons.link, color: Colors.green),
                               tooltip: 'Open in Browser',
                             ),
@@ -704,9 +717,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         children: [
           // Local endpoint (clickable when connected)
           GestureDetector(
-            onTap: tunnel.isConnected
-                ? () => _openLocalEndpoint(tunnel.localPort)
-                : null,
+            onTap: tunnel.isConnected ? () => _openLocalEndpoint(tunnel) : null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -720,7 +731,9 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                'localhost:${tunnel.localPort}',
+                tunnel.localHost == '127.0.0.1'
+                    ? 'localhost:${tunnel.localPort}'
+                    : '${tunnel.localHost}:${tunnel.localPort}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: tunnel.isConnected
@@ -738,7 +751,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
               height: 24,
               child: tunnel.isConnected
                   ? _buildAnimatedConnectionLine(tunnel)
-                  : _buildDisconnectedLine(),
+                  : _buildDisconnectedLine(tunnel),
             ),
           ),
 
@@ -838,32 +851,29 @@ class _TunnelListScreenState extends State<TunnelListScreen>
   }
 
   // Build disconnected line
-  Widget _buildDisconnectedLine() {
-    return Center(
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              color: Theme.of(context).colorScheme.outline,
+  Widget _buildDisconnectedLine(TunnelConfig tunnel) {
+    return Stack(
+      children: [
+        // Gray line in the background
+        Center(
+          child: Container(
+            height: 1,
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          ),
+        ),
+        // Jumphost text on top
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            color: Theme.of(context).colorScheme.surface,
+            child: Text(
+              tunnel.connectionString,
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(
-              Icons.link_off,
-              size: 16,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1048,11 +1058,21 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop('cancel'),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop('disconnect'),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Disconnect Existing & Connect'),
           ),
         ],
@@ -1150,11 +1170,21 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -1244,11 +1274,11 @@ class _TunnelListScreenState extends State<TunnelListScreen>
   }
 
   // Open the local endpoint in a web browser
-  Future<void> _openLocalEndpoint(int localPort) async {
+  Future<void> _openLocalEndpoint(TunnelConfig tunnel) async {
     if (!mounted) return;
 
     try {
-      final localUrl = 'http://127.0.0.1:$localPort';
+      final localUrl = 'http://${tunnel.localHost}:${tunnel.localPort}';
       final uri = Uri.parse(localUrl);
 
       if (await canLaunchUrl(uri)) {
@@ -1352,16 +1382,31 @@ class _TunnelListScreenState extends State<TunnelListScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: const Text('Cancel'),
             ),
             if (SystemTrayService().isAvailable)
               TextButton(
                 onPressed: () => Navigator.of(context).pop('hide'),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: const Text('Hide to Tray'),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop('close'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: const Text('Close & Disconnect'),
             ),
           ],
@@ -1391,15 +1436,30 @@ class _TunnelListScreenState extends State<TunnelListScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop('cancel'),
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: const Text('Cancel'),
             ),
             if (SystemTrayService().isAvailable)
               TextButton(
                 onPressed: () => Navigator.of(context).pop('hide'),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: const Text('Hide to Tray'),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop('close'),
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: const Text('Close'),
             ),
           ],
@@ -1494,6 +1554,11 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Close'),
           ),
         ],
@@ -1702,11 +1767,21 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Disconnect All'),
           ),
         ],
@@ -1810,11 +1885,21 @@ class _TunnelListScreenState extends State<TunnelListScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.green),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text('Create New'),
           ),
         ],

@@ -5,6 +5,7 @@ class TunnelConfig {
   final String sshUser;
   final String sshHost;
   final int localPort;
+  final String localHost;
   final String name;
   bool isConnected;
 
@@ -15,6 +16,7 @@ class TunnelConfig {
     required this.sshUser,
     required this.sshHost,
     required this.localPort,
+    this.localHost = '127.0.0.1',
     required this.name,
     this.isConnected = false,
   });
@@ -27,6 +29,7 @@ class TunnelConfig {
       'sshUser': sshUser,
       'sshHost': sshHost,
       'localPort': localPort,
+      'localHost': localHost,
       'name': name,
       'isConnected': isConnected,
     };
@@ -40,6 +43,7 @@ class TunnelConfig {
       sshUser: json['sshUser'] ?? '',
       sshHost: json['sshHost'] ?? '',
       localPort: json['localPort'] ?? 0,
+      localHost: json['localHost'] ?? '127.0.0.1',
       name: json['name'] ?? '',
       isConnected: json['isConnected'] ?? false,
     );
