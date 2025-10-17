@@ -131,8 +131,29 @@ export LD_LIBRARY_PATH="\$SCRIPT_DIR/usr/lib:\$LD_LIBRARY_PATH"
 # Set data directories
 export XDG_DATA_DIRS="\$SCRIPT_DIR/usr/share:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 
-# Handle system tray support for both X11 and Wayland
-export GDK_BACKEND=x11,wayland
+# DPI/HiDPI scaling support - inherit system settings
+# Don't override if already set by the system
+: \${GDK_SCALE:=}
+: \${GDK_DPI_SCALE:=}
+
+# Force proper DPI awareness for HiDPI displays
+# This ensures Flutter respects the display's actual DPI
+export GDK_SCALE=\${GDK_SCALE:-1}
+
+# Auto-detect text/DPI scaling from GNOME settings
+if [ -z "\$GDK_DPI_SCALE" ] && command -v gsettings >/dev/null 2>&1; then
+    TEXT_SCALE=\$(gsettings get org.gnome.desktop.interface text-scaling-factor 2>/dev/null)
+    if [ -n "\$TEXT_SCALE" ] && [ "\$TEXT_SCALE" != "1.0" ]; then
+        export GDK_DPI_SCALE=\$TEXT_SCALE
+    fi
+fi
+
+# Wayland fractional scaling support - ensure proper backend preference
+if [ -n "\$WAYLAND_DISPLAY" ]; then
+    export GDK_BACKEND=wayland,x11
+else
+    export GDK_BACKEND=x11,wayland
+fi
 
 # Flutter optimizations and compatibility settings
 export FLUTTER_ENGINE_SWITCH_UI_THREAD_PRIORITY=false
@@ -166,8 +187,30 @@ export G_SLICE=always-malloc
 export G_DEBUG=gc-friendly
 
 # Set environment for better system tray compatibility
-export GDK_BACKEND=x11,wayland
 export QT_QPA_PLATFORMTHEME=gtk3
+
+# DPI/HiDPI scaling support - inherit system settings
+# Don't override if already set by the system
+: ${GDK_SCALE:=}
+: ${GDK_DPI_SCALE:=}
+
+# Force proper DPI awareness for HiDPI displays
+export GDK_SCALE=${GDK_SCALE:-1}
+
+# Auto-detect text/DPI scaling from GNOME settings
+if [ -z "$GDK_DPI_SCALE" ] && command -v gsettings >/dev/null 2>&1; then
+    TEXT_SCALE=$(gsettings get org.gnome.desktop.interface text-scaling-factor 2>/dev/null)
+    if [ -n "$TEXT_SCALE" ] && [ "$TEXT_SCALE" != "1.0" ]; then
+        export GDK_DPI_SCALE=$TEXT_SCALE
+    fi
+fi
+
+# Wayland fractional scaling support - ensure proper backend preference
+if [ -n "$WAYLAND_DISPLAY" ]; then
+    export GDK_BACKEND=wayland,x11
+else
+    export GDK_BACKEND=x11,wayland
+fi
 
 cd "$SCRIPT_DIR"
 exec "$SCRIPT_DIR/tunstun" "$@"

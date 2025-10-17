@@ -1,5 +1,7 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_COMPILER g++)
 project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
@@ -42,8 +44,9 @@ endif()
 function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
   target_compile_options(${TARGET} PRIVATE -Wall -Werror)
-  # Allow deprecated declarations for tray_manager compatibility
+  # Allow deprecated declarations and sign comparison for tray_manager compatibility
   target_compile_options(${TARGET} PRIVATE -Wno-error=deprecated-declarations)
+  target_compile_options(${TARGET} PRIVATE -Wno-error=sign-compare)
   target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
   target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 endfunction()
@@ -55,6 +58,9 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # System-level dependencies.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+
+# Add Wayland support definitions
+add_compile_definitions(GDK_WINDOWING_WAYLAND)
 
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
