@@ -114,6 +114,8 @@ class _TunstunAppState extends State<TunstunApp> {
   void initState() {
     super.initState();
     tunnelService = TunnelService();
+    // Wire the TunnelService to SystemTrayService for dynamic menu updates
+    SystemTrayService().setTunnelService(tunnelService);
   }
 
   @override

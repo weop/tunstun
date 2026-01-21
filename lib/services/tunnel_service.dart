@@ -650,6 +650,7 @@ class TunnelService extends ChangeNotifier {
         : 'Tunstun - No active tunnels';
 
     SystemTrayService().updateTooltip(tooltip);
+    SystemTrayService().rebuildMenu();
   }
 
   // Validate that tunnels marked as connected actually have running SSH processes

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
+import 'tunnel_service.dart';
 
 class SystemTrayService with TrayListener {
   static final SystemTrayService _instance = SystemTrayService._internal();
@@ -10,6 +11,7 @@ class SystemTrayService with TrayListener {
 
   bool _isInitialized = false;
   bool _isDisabled = false;
+  TunnelService? _tunnelService;
 
   bool get isAvailable => _isInitialized && !_isDisabled;
 
@@ -53,21 +55,70 @@ class SystemTrayService with TrayListener {
     }
   }
 
-  Future<void> _setupContextMenu() async {
-    final menu = Menu(
-      items: [
-        MenuItem(
-          key: 'show_window',
-          label: 'Show Tunstun',
-        ),
-        MenuItem.separator(),
-        MenuItem(
-          key: 'quit_app',
-          label: 'Quit',
-        ),
-      ],
-    );
+  /// Set the TunnelService reference and trigger initial menu rebuild
+  void setTunnelService(TunnelService tunnelService) {
+    _tunnelService = tunnelService;
+    if (_isInitialized && !_isDisabled) {
+      rebuildMenu();
+    }
+  }
 
+  /// Rebuild the entire context menu (called when tunnel state changes)
+  Future<void> rebuildMenu() async {
+    if (!isAvailable) return;
+    try {
+      await _setupContextMenu();
+      debugPrint('System tray menu rebuilt');
+    } catch (e) {
+      debugPrint('Failed to rebuild system tray menu: $e');
+    }
+  }
+
+  Future<void> _setupContextMenu() async {
+    final menuItems = <MenuItem>[
+      MenuItem(
+        key: 'show_window',
+        label: 'Show Tunstun',
+      ),
+    ];
+
+    // Add Tunnels submenu if TunnelService is available and has tunnels
+    if (_tunnelService != null && _tunnelService!.tunnels.isNotEmpty) {
+      final tunnelMenuItems = <MenuItem>[];
+
+      for (final tunnel in _tunnelService!.tunnels) {
+        final isConnected = tunnel.isConnected ||
+                           _tunnelService!.hasActiveProcess(tunnel.id);
+
+        // Add checkmark to label for connected tunnels
+        final label = isConnected ? '✔ ${tunnel.name}' : tunnel.name;
+
+        tunnelMenuItems.add(
+          MenuItem(
+            key: 'tunnel_${tunnel.id}',
+            label: label,
+          ),
+        );
+      }
+
+      menuItems.add(
+        MenuItem.submenu(
+          key: 'tunnels_submenu',
+          label: 'Tunnels',
+          submenu: Menu(items: tunnelMenuItems),
+        ),
+      );
+    }
+
+    menuItems.addAll([
+      MenuItem.separator(),
+      MenuItem(
+        key: 'quit_app',
+        label: 'Quit',
+      ),
+    ]);
+
+    final menu = Menu(items: menuItems);
     await trayManager.setContextMenu(menu);
   }
 
@@ -209,6 +260,13 @@ class SystemTrayService with TrayListener {
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     debugPrint('Tray menu item clicked: ${menuItem.key}');
+
+    // Check if it's a tunnel menu item
+    if (menuItem.key?.startsWith('tunnel_') ?? false) {
+      _handleTunnelToggle(menuItem.key!);
+      return;
+    }
+
     switch (menuItem.key) {
       case 'show_window':
         _showWindow();
@@ -216,6 +274,38 @@ class SystemTrayService with TrayListener {
       case 'quit_app':
         _quitApp();
         break;
+    }
+  }
+
+  /// Handle tunnel toggle from tray menu
+  void _handleTunnelToggle(String menuKey) async {
+    if (_tunnelService == null) {
+      debugPrint('TunnelService not available');
+      return;
+    }
+
+    try {
+      // Extract tunnel ID from key format 'tunnel_<id>'
+      final tunnelId = menuKey.substring('tunnel_'.length);
+
+      // Check if tunnel is currently connected
+      final isConnected = _tunnelService!.hasActiveProcess(tunnelId);
+
+      if (isConnected) {
+        debugPrint('Disconnecting tunnel from tray: $tunnelId');
+        await _tunnelService!.disconnectTunnel(tunnelId);
+      } else {
+        debugPrint('Connecting tunnel from tray: $tunnelId');
+        final result = await _tunnelService!.connectTunnel(tunnelId);
+
+        if (!result.success) {
+          debugPrint('Failed to connect tunnel from tray: ${result.errorMessage}');
+          // Note: We can't show dialog from tray, errors are logged to console
+          // User can open main window for detailed error information
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling tunnel from tray: $e');
     }
   }
 }
