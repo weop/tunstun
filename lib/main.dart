@@ -8,9 +8,10 @@ import 'package:provider/provider.dart';
 import 'services/tunnel_service.dart';
 import 'services/system_tray_service.dart';
 import 'services/theme_service.dart';
+import 'app_theme.dart';
 import 'screens/tunnel_list_screen.dart';
 
-void main() async {
+void main(List<String> args) async {
   // Catch any Flutter engine errors early and log them
   FlutterError.onError = (FlutterErrorDetails details) {
     final errorString = details.exception.toString();
@@ -70,12 +71,33 @@ void main() async {
     await _initializeSystemTray();
   });
 
+  final String? initialConfigPath = _parseConfigPath(args);
+  if (initialConfigPath != null) {
+    debugPrint('Using config file from -c flag: $initialConfigPath');
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeService(),
-      child: const TunstunApp(),
+      child: TunstunApp(initialConfigPath: initialConfigPath),
     ),
   );
+}
+
+String? _parseConfigPath(List<String> args) {
+  for (int i = 0; i < args.length; i++) {
+    final a = args[i];
+    if ((a == '-c' || a == '--config') && i + 1 < args.length) {
+      return args[i + 1];
+    }
+    if (a.startsWith('--config=')) {
+      return a.substring('--config='.length);
+    }
+    if (a.startsWith('-c=')) {
+      return a.substring('-c='.length);
+    }
+  }
+  return null;
 }
 
 // Simple system tray initialization using robust tray_manager
@@ -101,7 +123,9 @@ Future<void> _initializeSystemTray() async {
 }
 
 class TunstunApp extends StatefulWidget {
-  const TunstunApp({super.key});
+  final String? initialConfigPath;
+
+  const TunstunApp({super.key, this.initialConfigPath});
 
   @override
   State<TunstunApp> createState() => _TunstunAppState();
@@ -141,29 +165,12 @@ class _TunstunAppState extends State<TunstunApp> {
         return MaterialApp(
           title: 'Tunstun',
           themeMode: themeService.themeMode,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.indigo.shade700,
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-            appBarTheme: const AppBarTheme(
-              centerTitle: true,
-              elevation: 0,
-            ),
+          theme: buildAppTheme(Brightness.light),
+          darkTheme: buildAppTheme(Brightness.dark),
+          home: TunnelListScreen(
+            tunnelService: tunnelService,
+            initialConfigPath: widget.initialConfigPath,
           ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.indigo.shade700,
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-            appBarTheme: const AppBarTheme(
-              centerTitle: true,
-              elevation: 0,
-            ),
-          ),
-          home: TunnelListScreen(tunnelService: tunnelService),
           debugShowCheckedModeBanner: false,
         );
       },

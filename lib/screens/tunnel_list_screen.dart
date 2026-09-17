@@ -12,6 +12,7 @@ import '../services/system_tray_service.dart';
 import '../services/traffic_monitor_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/flutter_file_picker.dart';
+import '../widgets/header_logo.dart';
 import 'add_tunnel_screen.dart';
 import 'edit_tunnel_screen.dart';
 import 'config_manager_screen.dart';
@@ -39,8 +40,13 @@ class ConfigManagerIntent extends Intent {
 
 class TunnelListScreen extends StatefulWidget {
   final TunnelService tunnelService;
+  final String? initialConfigPath;
 
-  const TunnelListScreen({super.key, required this.tunnelService});
+  const TunnelListScreen({
+    super.key,
+    required this.tunnelService,
+    this.initialConfigPath,
+  });
 
   @override
   State<TunnelListScreen> createState() => _TunnelListScreenState();
@@ -57,7 +63,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
   void initState() {
     super.initState();
     widget.tunnelService.addListener(_onTunnelsChanged);
-    _loadTunnels();
+    _initialLoad();
 
     // Initialize traffic monitoring service
     _trafficMonitor = TrafficMonitorService();
@@ -189,8 +195,19 @@ class _TunnelListScreenState extends State<TunnelListScreen>
     }
   }
 
+  Future<void> _initialLoad() async {
+    await widget.tunnelService.loadInitialConfig(
+      explicitPath: widget.initialConfigPath,
+    );
+  }
+
   Future<void> _loadTunnels() async {
-    await widget.tunnelService.loadTunnels();
+    final current = widget.tunnelService.currentConfigurationFile;
+    if (current != null) {
+      await widget.tunnelService.loadFromFile(current);
+    } else {
+      await widget.tunnelService.loadTunnels();
+    }
   }
 
   @override
@@ -251,14 +268,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                       .infinity, // Expand to fill the horizontal space allocated by AppBar for the title
                   alignment: Alignment
                       .centerLeft, // Center the Text widget within this Container
-                  child: Text(
-                    'tunstun',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontStyle: FontStyle.italic,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
+                  child: const HeaderLogo(),
                 ),
               ),
               backgroundColor: Theme.of(context).colorScheme.surface,
@@ -525,12 +535,6 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                     children: [
                       Row(
                         children: [
-                          Text(
-                            tunnel.name,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 8),
                           IconButton(
                             onPressed: () => _toggleTunnel(tunnel),
                             icon: Icon(
@@ -545,6 +549,12 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                                 ? 'Disconnect'
                                 : 'Connect',
                           ),
+                          const SizedBox(width: 8),
+                          Text(
+                            tunnel.name,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
                           if (tunnel.isConnected) ...[
                             const SizedBox(width: 8),
                             IconButton(
@@ -555,7 +565,6 @@ class _TunnelListScreenState extends State<TunnelListScreen>
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
 
                       // Animated tunnel connection display
                       _buildTunnelConnectionRow(tunnel),
@@ -712,7 +721,7 @@ class _TunnelListScreenState extends State<TunnelListScreen>
   // Build an animated connection display for the tunnel
   Widget _buildTunnelConnectionRow(TunnelConfig tunnel) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
           // Local endpoint (clickable when connected)

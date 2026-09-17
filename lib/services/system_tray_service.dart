@@ -34,7 +34,9 @@ class SystemTrayService with TrayListener {
         return;
       }
 
-      debugPrint('System tray support confirmed, proceeding with initialization...');
+      debugPrint(
+        'System tray support confirmed, proceeding with initialization...',
+      );
       await Future.delayed(const Duration(milliseconds: 300));
 
       // Set tray icon - tray_manager is much more robust
@@ -76,10 +78,7 @@ class SystemTrayService with TrayListener {
 
   Future<void> _setupContextMenu() async {
     final menuItems = <MenuItem>[
-      MenuItem(
-        key: 'show_window',
-        label: 'Show Tunstun',
-      ),
+      MenuItem(key: 'show_window', label: 'Show Tunstun'),
     ];
 
     // Add Tunnels submenu if TunnelService is available and has tunnels
@@ -87,18 +86,13 @@ class SystemTrayService with TrayListener {
       final tunnelMenuItems = <MenuItem>[];
 
       for (final tunnel in _tunnelService!.tunnels) {
-        final isConnected = tunnel.isConnected ||
-                           _tunnelService!.hasActiveProcess(tunnel.id);
+        final isConnected =
+            tunnel.isConnected || _tunnelService!.hasActiveProcess(tunnel.id);
 
         // Add checkmark to label for connected tunnels
         final label = isConnected ? '✔ ${tunnel.name}' : tunnel.name;
 
-        tunnelMenuItems.add(
-          MenuItem(
-            key: 'tunnel_${tunnel.id}',
-            label: label,
-          ),
-        );
+        tunnelMenuItems.add(MenuItem(key: 'tunnel_${tunnel.id}', label: label));
       }
 
       menuItems.add(
@@ -112,10 +106,7 @@ class SystemTrayService with TrayListener {
 
     menuItems.addAll([
       MenuItem.separator(),
-      MenuItem(
-        key: 'quit_app',
-        label: 'Quit',
-      ),
+      MenuItem(key: 'quit_app', label: 'Quit'),
     ]);
 
     final menu = Menu(items: menuItems);
@@ -188,7 +179,9 @@ class SystemTrayService with TrayListener {
 
   Future<void> hideToTray() async {
     if (!isAvailable) {
-      debugPrint('System tray not available, hiding window without tray functionality');
+      debugPrint(
+        'System tray not available, hiding window without tray functionality',
+      );
       try {
         await windowManager.hide();
         await windowManager.setSkipTaskbar(true);
@@ -212,8 +205,8 @@ class SystemTrayService with TrayListener {
     } else if (Platform.isMacOS) {
       return 'assets/icons/icon.png'; // macOS
     } else {
-      // Linux - try different sizes for better compatibility
-      return 'assets/icons/icon.png';
+      // Linux - dedicated tray glyph, def icon unreadable at tray size
+      return 'assets/icons/tray_icon.png';
     }
   }
 
@@ -299,7 +292,9 @@ class SystemTrayService with TrayListener {
         final result = await _tunnelService!.connectTunnel(tunnelId);
 
         if (!result.success) {
-          debugPrint('Failed to connect tunnel from tray: ${result.errorMessage}');
+          debugPrint(
+            'Failed to connect tunnel from tray: ${result.errorMessage}',
+          );
           // Note: We can't show dialog from tray, errors are logged to console
           // User can open main window for detailed error information
         }

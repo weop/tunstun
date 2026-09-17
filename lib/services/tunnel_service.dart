@@ -62,6 +62,64 @@ class TunnelService extends ChangeNotifier {
     }
   }
 
+  /// Resolve the initial config to load at startup.
+  /// Priority:
+  ///   1. Explicit path from `-c` / `--config` flag.
+  ///   2. A tunstun-compatible YAML file in the current working directory
+  ///      (tunstun.yaml, tunstun.yml, tunnels.yaml, tunnels.yml).
+  ///   3. The default user-config file.
+  Future<void> loadInitialConfig({String? explicitPath}) async {
+    if (explicitPath != null && explicitPath.isNotEmpty) {
+      final ok = await loadFromFile(explicitPath);
+      if (ok) {
+        debugPrint('Loaded config from -c flag: $explicitPath');
+        return;
+      }
+      debugPrint(
+        'Failed to load config from -c flag: $explicitPath, falling back to autoload/default',
+      );
+    }
+
+    final autoloadPath = await findAutoloadConfigInCwd();
+    if (autoloadPath != null) {
+      final ok = await loadFromFile(autoloadPath);
+      if (ok) {
+        debugPrint('Autoloaded tunstun config from CWD: $autoloadPath');
+        return;
+      }
+      debugPrint(
+        'Autoload candidate found but failed to load: $autoloadPath, falling back to default',
+      );
+    }
+
+    await loadTunnels();
+  }
+
+  /// Look for a tunstun-compatible YAML file in the current working directory
+  /// (the directory from which the app was launched). Returns the absolute path
+  /// if a valid candidate is found, or null otherwise.
+  Future<String?> findAutoloadConfigInCwd() async {
+    const candidateNames = [
+      'tunstun.yaml',
+      'tunstun.yml',
+      'tunnels.yaml',
+      'tunnels.yml',
+    ];
+    try {
+      final cwd = Directory.current;
+      for (final name in candidateNames) {
+        final file = File('${cwd.path}/$name');
+        if (await file.exists() &&
+            await isValidConfigurationFile(file.path)) {
+          return file.absolute.path;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error scanning CWD for autoload config: $e');
+    }
+    return null;
+  }
+
   Future<void> loadTunnels() async {
     try {
       final file = await _getConfigFile();

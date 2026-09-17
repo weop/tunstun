@@ -6,6 +6,7 @@ tunnels:
     sshUser: "user"
     sshHost: "ssh-server"
     localPort: 8080
+    localHost: "127.0.0.1"
     isConnected: false
   - id: "example-2"
     name: "Database Connection"
@@ -14,4 +15,5 @@ tunnels:
     sshUser: "admin"
     sshHost: "database-server"
     localPort: 5433
+    localHost: "127.0.0.1"
     isConnected: false

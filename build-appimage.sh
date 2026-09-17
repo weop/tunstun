@@ -13,14 +13,30 @@ if ! command -v flutter >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! command -v convert >/dev/null 2>&1; then
+if ! command -v magick >/dev/null 2>&1 && ! command -v convert >/dev/null 2>&1; then
     echo "⚠️  ImageMagick not found. Installing..."
-    sudo apt-get update && sudo apt-get install -y imagemagick
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update && sudo apt-get install -y imagemagick
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm imagemagick
+    else
+        echo "❌ Unsupported package manager. Please install ImageMagick manually."
+        exit 1
+    fi
+fi
+
+# ImageMagick 7 (Arch, newer Debian) provides `magick`; ImageMagick 6 only `convert`
+if command -v magick >/dev/null 2>&1; then
+    CONVERT=magick
+else
+    CONVERT=convert
 fi
 
 # Clean previous builds
+# build/linux is removed too: its CMake cache holds absolute, distro-specific
+# library paths and breaks when the project moves between systems.
 echo "🧹 Cleaning previous builds..."
-rm -rf AppDir-jit AppDir-release tunstun-jit-*.AppImage tunstun-release-*.AppImage
+rm -rf AppDir-jit AppDir-release tunstun-jit-*.AppImage tunstun-release-*.AppImage build/linux
 
 # Configure Flutter
 flutter config --enable-linux-desktop
@@ -50,11 +66,11 @@ setup_common_files() {
     local app_name=$2
     
     echo "🎨 Setting up icons for $app_name..."
-    convert assets/icons/icon.png -resize 512x512 $appdir/usr/share/icons/hicolor/512x512/apps/tunstun.png
-    convert assets/icons/icon.png -resize 128x128 $appdir/usr/share/icons/hicolor/128x128/apps/tunstun.png
-    convert assets/icons/icon.png -resize 64x64 $appdir/usr/share/icons/hicolor/64x64/apps/tunstun.png
-    convert assets/icons/icon.png -resize 32x32 $appdir/usr/share/icons/hicolor/32x32/apps/tunstun.png
-    convert assets/icons/icon.png -resize 16x16 $appdir/usr/share/icons/hicolor/16x16/apps/tunstun.png
+    $CONVERT assets/icons/icon.png -resize 512x512 $appdir/usr/share/icons/hicolor/512x512/apps/tunstun.png
+    $CONVERT assets/icons/icon.png -resize 128x128 $appdir/usr/share/icons/hicolor/128x128/apps/tunstun.png
+    $CONVERT assets/icons/icon.png -resize 64x64 $appdir/usr/share/icons/hicolor/64x64/apps/tunstun.png
+    $CONVERT assets/icons/icon.png -resize 32x32 $appdir/usr/share/icons/hicolor/32x32/apps/tunstun.png
+    $CONVERT assets/icons/icon.png -resize 16x16 $appdir/usr/share/icons/hicolor/16x16/apps/tunstun.png
     
     # Copy main icon for AppImage
     cp assets/icons/icon.png $appdir/tunstun.png
